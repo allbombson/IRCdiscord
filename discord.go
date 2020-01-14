@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"regexp"
 	"strconv"
 	"strings"
@@ -88,8 +89,10 @@ func sendMessageFromDiscordToIRC(date time.Time, c *ircConn, m *discordgo.Messag
 
 	content := prefixString + convertDiscordMessageToIRC(m, c)
 	if content != "" {
-		for _, line := range strings.Split(content, "\n") {
-			c.sendPRIVMSG(tags, nick, nick, m.Author.ID, ircChannel, line)
+		for _, msg := range strings.Split(content, "\n") {
+			for _, line := range splitSubN(msg, 350) {
+				c.sendPRIVMSG(tags, nick, nick, m.Author.ID, ircChannel, line)
+			}
 		}
 	}
 }
