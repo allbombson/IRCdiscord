@@ -9,6 +9,8 @@ import (
 
 // is there a better way?
 func addHandlers(s *discordgo.Session) {
+	s.AddHandlerOnce(ready)
+	s.AddHandler(guildMembersChunk)
 	s.AddHandler(messageCreate)
 	s.AddHandler(messageDelete)
 	s.AddHandler(messageUpdate)
@@ -21,6 +23,24 @@ func addHandlers(s *discordgo.Session) {
 	s.AddHandler(guildMemberAdd)
 	s.AddHandler(guildMemberRemove)
 	s.AddHandler(guildMemberUpdate)
+}
+
+func ready(session *discordgo.Session, ready *discordgo.Ready) {
+	for _, g := range ready.Guilds {
+		session.RequestGuildMembers(g.ID, "", 0)
+	}
+}
+
+func guildMembersChunk(session *discordgo.Session, chunk *discordgo.GuildMembersChunk) {
+	var guildSession *guildSession
+	var err error
+	guildSession, err = getGuildSession(session.Token, chunk.GuildID)
+	if err != nil {
+		return
+	}
+	for _, member := range chunk.Members {
+		guildSession.addMember(member)
+	}
 }
 
 func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate) {
@@ -64,8 +84,8 @@ func messageUpdate(session *discordgo.Session, message *discordgo.MessageUpdate)
 		if err != nil {
 			return
 		}
-		sendMessageFromDiscordToIRC(date, conn, oldMessage, "\x0308message sent \x0f\x02"+humanize.Time(getTimeFromSnowflake(message.ID))+"\x0f:\n", "")
-		sendMessageFromDiscordToIRC(date, conn, message.Message, "\x0308was edited to:\n", "")
+		sendMessageFromDiscordToIRC(date, conn, oldMessage, "\x0312message sent \x0f\x02"+humanize.Time(getTimeFromSnowflake(message.ID))+"\x0f:\n", "")
+		sendMessageFromDiscordToIRC(date, conn, message.Message, "\x0312was edited to:\n", "")
 	}
 	guildSession.addMessage(message.Message)
 }

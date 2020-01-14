@@ -207,11 +207,6 @@ func newGuildSession(token string, guildID string) (session *guildSession, err e
 	}
 
 	if sessionType == guildSessionGuild {
-		err = session.populateUserMap("")
-		if err != nil {
-			return nil, err
-		}
-
 		err = session.populateRoleMap()
 		if err != nil {
 			return nil, err
