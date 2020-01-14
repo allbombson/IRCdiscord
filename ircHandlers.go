@@ -187,6 +187,7 @@ func (c *ircConn) handleTOPIC(m *irc.Message) {
 
 	if topic != "" {
 		c.sendRPL(irc.RPL_TOPIC, channelName, topic)
+        c.sendRPL(irc.RPL_TOPICWHOTIME, channelName, "noone", "0")
 	}
 }
 
