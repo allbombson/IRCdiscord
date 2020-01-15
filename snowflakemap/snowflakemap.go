@@ -58,7 +58,11 @@ func (m *SnowflakeMap) Add(name string, snowflake string) string {
 		_name := name + suffix
 
 		_, nameExists := m.snowflakes[_name]
+		_, snowflakeExists := m.names[snowflake]
 		if nameExists {
+			if snowflakeExists && m.snowflakes[_name] == snowflake && m.names[snowflake] == _name {
+				return _name
+			}
 			continue
 		}
 
