@@ -77,21 +77,23 @@ var (
 func convertDiscordContentToIRC(text string, c *ircConn) (content string) {
 	content = text
 	content = patternRoles.ReplaceAllStringFunc(content, func(mention string) string {
+        fmt.Printf("processing role mention %s\n", mention);
 		role, err := c.getRole(mention[3 : len(mention)-1])
 		if err != nil {
 			return mention
 		}
 
-		colour := "\x0303\x02"
-		colourReset := "\x03\x02"
+		roleColour := "\x0303\x02"
+		colourReset := "\x0F"
 		for _, _role := range c.guildSession.selfMember.Roles {
 			if role.ID == _role {
-				colour += "\x16"
-				colourReset += "\x16"
+				nickColour := "\x0312\x02"
+				return fmt.Sprintf("%s&%s%s (%s@%s%s)", roleColour, c.getRoleName(role), colourReset, nickColour, c.getNick(c.guildSession.selfMember.User), colourReset)
 			}
 		}
 
-		return fmt.Sprintf("%s&%s%s", colour, c.getRoleName(role), colourReset)
+        fmt.Println("role was not one of ours...");
+		return fmt.Sprintf("%s&%s%s", roleColour, c.getRoleName(role), colourReset)
 	})
 
 	// TODO: remove this copy/paste shit
@@ -101,14 +103,14 @@ func convertDiscordContentToIRC(text string, c *ircConn) (content string) {
 			return mention
 		}
 
-		colour := "\x0302\x02"
-		colourReset := "\x03\x02"
+		colourReset := "\x0F"
 		if user.ID == c.selfUser.ID {
-			colour += "\x16"
-			colourReset += "\x16"
+			colour := "\x0312\x02"
+			return fmt.Sprintf("%s@%s%s", colour, c.getNick(user), colourReset)
+		} else {
+			colour := "\x0302\x02"
+			return fmt.Sprintf("%s@%s%s", colour, c.getNick(user), colourReset)
 		}
-
-		return fmt.Sprintf("%s@%s%s", colour, c.getNick(user), colourReset)
 	})
 
 	content = patternUsers.ReplaceAllStringFunc(content, func(mention string) string {
@@ -117,14 +119,14 @@ func convertDiscordContentToIRC(text string, c *ircConn) (content string) {
 			return mention
 		}
 
-		colour := "\x0302\x02"
-		colourReset := "\x03\x02"
+		colourReset := "\x0F"
 		if user.ID == c.selfUser.ID {
-			colour += "\x16"
-			colourReset += "\x16"
+			colour := "\x0312\x02"
+			return fmt.Sprintf("%s@%s%s", colour, c.getNick(user), colourReset)
+		} else {
+			colour := "\x0302\x02"
+			return fmt.Sprintf("%s@%s%s", colour, c.getNick(user), colourReset)
 		}
-
-		return fmt.Sprintf("%s@%s%s", colour, c.getNick(user), colourReset)
 	})
 
 	content = patternChannels.ReplaceAllStringFunc(content, func(mention string) string {
