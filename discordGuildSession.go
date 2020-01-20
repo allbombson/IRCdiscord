@@ -31,6 +31,7 @@ type guildSession struct {
 	channelsMutex sync.RWMutex
 	members       map[string]*discordgo.Member
 	membersMutex  sync.RWMutex
+	membersDone   bool
 	roles         map[string]*discordgo.Role
 	rolesMutex    sync.RWMutex
 	messages      map[string]*discordgo.Message
@@ -191,6 +192,7 @@ func newGuildSession(token string, guildID string) (session *guildSession, err e
 		channelsMutex:    sync.RWMutex{},
 		members:          make(map[string]*discordgo.Member),
 		membersMutex:     sync.RWMutex{},
+		membersDone:      false,
 		roles:            make(map[string]*discordgo.Role),
 		rolesMutex:       sync.RWMutex{},
 		messages:         make(map[string]*discordgo.Message),

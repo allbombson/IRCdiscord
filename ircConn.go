@@ -77,12 +77,18 @@ func (c *ircConn) connect() (err error) {
 			c.close()
 			return err
 		}
+	} else {
+		fmt.Println("found existing guild session")
 	}
 
 	if guildSession == nil {
 		return errors.New("couldn't find or create a guild session")
 	}
 
+	if guildID != "" {
+		fmt.Println("requesting guild members")
+		guildSession.session.RequestGuildMembers(guildID, "", 0)
+	}
 	c.guildSession = guildSession
 	c.guildSession.addConn(c)
 	c.loggedin = true

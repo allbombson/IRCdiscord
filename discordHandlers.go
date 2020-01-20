@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -25,22 +26,40 @@ func addHandlers(s *discordgo.Session) {
 	s.AddHandler(guildMemberUpdate)
 }
 
-func ready(session *discordgo.Session, ready *discordgo.Ready) {
-	for _, g := range ready.Guilds {
-		session.RequestGuildMembers(g.ID, "", 0)
-	}
-}
-
 func guildMembersChunk(session *discordgo.Session, chunk *discordgo.GuildMembersChunk) {
+	fmt.Printf("processing guildMembersChunk: %d members\n", len(chunk.Members))
 	var guildSession *guildSession
 	var err error
 	guildSession, err = getGuildSession(session.Token, chunk.GuildID)
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
+	cachedGuild, _ := session.State.Guild(chunk.GuildID)
+	cachedGuild.Members = append(cachedGuild.Members, chunk.Members...)
+	removeDuplicateMembers(&cachedGuild.Members)
+	fmt.Println("finished removing members")
 	for _, member := range chunk.Members {
+		fmt.Println("discordHandler: adding guild member")
 		guildSession.addMember(member)
 	}
+	fmt.Printf("we have %d members of %d\n", len(cachedGuild.Members), guildSession.guild.MemberCount)
+	if len(cachedGuild.Members) == guildSession.guild.MemberCount {
+		guildSession.membersDone = true
+	}
+}
+
+func removeDuplicateMembers(list *[]*discordgo.Member) {
+	found := make(map[string]bool)
+	j := 0
+	for i, x := range *list {
+		if !found[x.User.ID] {
+			found[x.User.ID] = true
+			(*list)[j] = (*list)[i]
+			j++
+		}
+	}
+	*list = (*list)[:j]
 }
 
 func messageCreate(session *discordgo.Session, message *discordgo.MessageCreate) {

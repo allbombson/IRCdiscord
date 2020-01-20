@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/google/uuid"
@@ -315,6 +316,9 @@ func (c *ircConn) handleNAMES(m *irc.Message) {
 	}
 	var ircNickArray []string
 	if c.guildSessionType == guildSessionGuild {
+		for c.guildSession.membersDone == false {
+			time.Sleep(5 * time.Second)
+		}
 		ircNicks := c.guildSession.userMap.GetSnowflakeMap()
 		ircNickArray = []string{}
 		for nick := range ircNicks {
