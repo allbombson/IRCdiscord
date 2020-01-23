@@ -64,6 +64,12 @@ func (m *SnowflakeMap) Add(name string, snowflake string) string {
 				return _name
 			}
 			continue
+		} else if snowflakeExists {
+			oldName := m.names[snowflake]
+			delete(m.snowflakes, oldName)
+			m.snowflakes[_name] = snowflake
+			m.names[snowflake] = _name
+			return _name
 		}
 
 		m.snowflakes[_name] = snowflake
