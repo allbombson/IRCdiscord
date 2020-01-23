@@ -77,11 +77,17 @@ var (
 func convertDiscordContentToIRC(text string, c *ircConn) (content string) {
 	content = text
 	content = patternRoles.ReplaceAllStringFunc(content, func(mention string) string {
-        fmt.Printf("processing role mention %s\n", mention);
+		fmt.Printf("processing role mention %s\n", mention)
 		role, err := c.getRole(mention[3 : len(mention)-1])
 		if err != nil {
+			fmt.Println(err)
 			return mention
 		}
+		if role == nil {
+			fmt.Printf("role is nil: %s\n", mention)
+			return mention
+		}
+		fmt.Printf("role found: %s\n", c.getRoleName(role))
 
 		roleColour := "\x0303\x02"
 		colourReset := "\x0F"
@@ -92,7 +98,6 @@ func convertDiscordContentToIRC(text string, c *ircConn) (content string) {
 			}
 		}
 
-        fmt.Println("role was not one of ours...");
 		return fmt.Sprintf("%s&%s%s", roleColour, c.getRoleName(role), colourReset)
 	})
 
