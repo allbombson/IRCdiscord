@@ -10,7 +10,6 @@ import (
 
 // is there a better way?
 func addHandlers(s *discordgo.Session) {
-	s.AddHandlerOnce(ready)
 	s.AddHandler(guildMembersChunk)
 	s.AddHandler(messageCreate)
 	s.AddHandler(messageDelete)
@@ -38,9 +37,7 @@ func guildMembersChunk(session *discordgo.Session, chunk *discordgo.GuildMembers
 	cachedGuild, _ := session.State.Guild(chunk.GuildID)
 	cachedGuild.Members = append(cachedGuild.Members, chunk.Members...)
 	removeDuplicateMembers(&cachedGuild.Members)
-	fmt.Println("finished removing members")
 	for _, member := range chunk.Members {
-		fmt.Println("discordHandler: adding guild member")
 		guildSession.addMember(member)
 	}
 	fmt.Printf("we have %d members of %d\n", len(cachedGuild.Members), guildSession.guild.MemberCount)
