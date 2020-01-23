@@ -100,8 +100,14 @@ func messageUpdate(session *discordgo.Session, message *discordgo.MessageUpdate)
 		if err != nil {
 			return
 		}
-		sendMessageFromDiscordToIRC(date, conn, oldMessage, "\x0312message sent \x0f\x02"+humanize.Time(getTimeFromSnowflake(message.ID))+"\x0f:\n", "")
-		sendMessageFromDiscordToIRC(date, conn, message.Message, "\x0312was edited to:\n", "")
+		if !oldMessage.Pinned && message.Message.Pinned {
+			sendMessageFromDiscordToIRC(date, conn, oldMessage, "\x0312message sent \x0f\x02"+humanize.Time(getTimeFromSnowflake(message.ID))+" was pinned\x0f:\n", "")
+		} else if oldMessage.Pinned && !message.Message.Pinned {
+			sendMessageFromDiscordToIRC(date, conn, oldMessage, "\x0312message sent \x0f\x02"+humanize.Time(getTimeFromSnowflake(message.ID))+" was unpinned\x0f:\n", "")
+		} else {
+			sendMessageFromDiscordToIRC(date, conn, oldMessage, "\x0312message sent \x0f\x02"+humanize.Time(getTimeFromSnowflake(message.ID))+"\x0f:\n", "")
+			sendMessageFromDiscordToIRC(date, conn, message.Message, "\x0312was edited to:\n", "")
+		}
 	}
 	guildSession.addMessage(message.Message)
 }
