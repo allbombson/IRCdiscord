@@ -419,8 +419,8 @@ func (g *guildSession) getUser(userID string) (user *discordgo.User, err error) 
 
 func (g *guildSession) getRole(roleID string) (role *discordgo.Role, err error) {
 	g.rolesMutex.Lock()
-	defer g.rolesMutex.Unlock()
 	role, exists := g.roles[roleID]
+	g.rolesMutex.Unlock()
 	if exists {
 		return
 	}
@@ -437,6 +437,8 @@ func (g *guildSession) getRole(roleID string) (role *discordgo.Role, err error) 
 		g.addRole(_role)
 	}
 
+	g.rolesMutex.Lock()
+	defer g.rolesMutex.Unlock()
 	role, exists = g.roles[roleID]
 	if exists {
 		return
