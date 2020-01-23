@@ -156,6 +156,29 @@ func (c *ircConn) sendPRIVMSG(tags irc.Tags, nick string, realname string, hostn
 	return
 }
 
+func (c *ircConn) sendQUIT(nick string, realname string, hostname string, reason string) (err error) {
+	var prefix *irc.Prefix
+	if nick == "" || realname == "" || hostname == "" {
+		prefix = &c.clientPrefix
+	} else {
+		prefix = &irc.Prefix{
+			User: nick,
+			Name: realname,
+			Host: hostname,
+		}
+	}
+	params := []string{":"}
+	if reason != "" {
+		params = append(params, reason)
+	}
+	err = c.encode(&irc.Message{
+		Prefix:  prefix,
+		Command: irc.QUIT,
+		Params:  params,
+	})
+	return
+}
+
 func (c *ircConn) sendCAP(subcommand string, params ...string) (err error) {
 	err = c.encode(&irc.Message{
 		Prefix:  &c.serverPrefix,

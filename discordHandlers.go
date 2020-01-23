@@ -41,7 +41,7 @@ func guildMembersChunk(session *discordgo.Session, chunk *discordgo.GuildMembers
 		guildSession.addMember(member)
 	}
 	fmt.Printf("we have %d members of %d\n", len(cachedGuild.Members), guildSession.guild.MemberCount)
-	if len(cachedGuild.Members) == guildSession.guild.MemberCount {
+	if len(cachedGuild.Members) >= guildSession.guild.MemberCount {
 		guildSession.membersDone = true
 	}
 }
@@ -183,6 +183,8 @@ func guildRoleUpdate(session *discordgo.Session, role *discordgo.GuildRoleUpdate
 }
 
 func guildMemberAdd(session *discordgo.Session, member *discordgo.GuildMemberAdd) {
+	fmt.Println("processing GuildMemberAdd")
+	fmt.Printf("username: %s#%s | nick: %s\n", member.User.Username, member.User.Discriminator, getIRCNick(member.Nick))
 	guildSession, err := getGuildSession(session.Token, member.GuildID)
 	if err != nil {
 		return
@@ -193,11 +195,13 @@ func guildMemberAdd(session *discordgo.Session, member *discordgo.GuildMemberAdd
 			continue
 		}
 		for ircChannel := range conn.channels {
+			channelName := guildSession.channelMap.GetName(ircChannel)
+			fmt.Println(channelName)
 			conn.sendJOIN(
 				conn.getNick(member.User),
 				convertDiscordUsernameToIRCRealname(member.Member.User.Username),
 				member.Member.User.ID,
-				ircChannel,
+				channelName,
 			)
 		}
 		return
@@ -205,19 +209,51 @@ func guildMemberAdd(session *discordgo.Session, member *discordgo.GuildMemberAdd
 }
 
 func guildMemberUpdate(session *discordgo.Session, member *discordgo.GuildMemberUpdate) {
+	fmt.Println("processing GuildMemberUpdate")
 	guildSession, err := getGuildSession(session.Token, member.GuildID)
 	if err != nil {
 		return
 	}
+
+	oldNick := guildSession.getNick(member.User)
 	guildSession.updateMember(member.Member)
-	// TODO: handle nick changes? handle role changes?
+	newNick := guildSession.getNick(member.User)
+	if oldNick != newNick {
+		for _, conn := range guildSession.conns {
+			if conn == nil {
+				continue
+			}
+			conn.sendNICK(
+				oldNick,
+				oldNick,
+				member.User.ID,
+				newNick,
+			)
+			return
+		}
+	}
+	// TODO: handle role changes?
 }
 
 func guildMemberRemove(session *discordgo.Session, member *discordgo.GuildMemberRemove) {
+	fmt.Println("processing GuildMemberRemove")
 	guildSession, err := getGuildSession(session.Token, member.GuildID)
 	if err != nil {
 		return
 	}
 	guildSession.removeMember(member.Member)
+	fmt.Printf("username: %s#%s | nick: %s\n", member.User.Username, member.User.Discriminator, getIRCNick(member.Nick))
+	for _, conn := range guildSession.conns {
+		if conn == nil {
+			continue
+		}
+		conn.sendQUIT(
+			conn.getNick(member.User),
+			convertDiscordUsernameToIRCRealname(member.Member.User.Username),
+			member.Member.User.ID,
+			"Quit",
+		)
+		return
+	}
 	// TODO: send part like guildMemberAdd
 }

@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alanhuang122/IRCdiscord/snowflakemap"
 	"github.com/bwmarrin/discordgo"
 	"github.com/google/uuid"
-	"github.com/tadeokondrak/IRCdiscord/snowflakemap"
 )
 
 type guildSessionType int
@@ -376,6 +376,19 @@ func (g *guildSession) updateUser(user *discordgo.User) {
 	g.usersMutex.Lock()
 	g.users[user.ID] = user
 	g.usersMutex.Unlock()
+	member, err := g.getMember(user.ID)
+	if note, ok := g.session.State.Notes[user.ID]; ok {
+		kv := strings.Split(strings.Split(note, "\n")[0], ": ")
+		if len(kv) == 2 && kv[0] == "nick" {
+			g.userMap.Add(getIRCNick(kv[1]), user.ID)
+			return
+		}
+	}
+	if member != nil && err == nil && member.Nick != "" {
+		g.userMap.Add(getIRCNick(member.Nick), user.ID)
+		return
+	}
+	g.userMap.Add(getIRCNick(user.Username), user.ID)
 }
 
 func (g *guildSession) removeUser(user *discordgo.User) {
