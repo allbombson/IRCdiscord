@@ -290,7 +290,7 @@ func (g *guildSession) addChannel(channel *discordgo.Channel) (name string) {
 	g.channelsMutex.Lock()
 	g.channels[channel.ID] = channel
 	g.channelsMutex.Unlock()
-	if channel.Type != discordgo.ChannelTypeGuildText && channel.Type != discordgo.ChannelTypeDM && channel.Type != discordgo.ChannelTypeGroupDM {
+	if channel.Type != discordgo.ChannelTypeGuildText && channel.Type != discordgo.ChannelTypeGuildNews && channel.Type != discordgo.ChannelTypeDM && channel.Type != discordgo.ChannelTypeGroupDM {
 		return ""
 	}
 
