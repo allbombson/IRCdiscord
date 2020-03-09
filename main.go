@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	version = "0.0.0.0 Alpha" // TODO: update
+	version = "0.0.0.0a" // TODO: update
+	serverhostname = "GentooInc"
 )
 
 var (

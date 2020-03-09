@@ -121,9 +121,9 @@ func (c *ircConn) register() (err error) {
 	c.sendNICK("", "", "", nick)
 
 	c.sendRPL(irc.RPL_WELCOME, fmt.Sprintf("Welcome to the Discord Internet Relay Chat Network %s", nick))
-	c.sendRPL(irc.RPL_YOURHOST, fmt.Sprintf("Your host is %[1]s, running version IRCdiscord-%[2]s", "serverhostname", version))
+	c.sendRPL(irc.RPL_YOURHOST, fmt.Sprintf("Your host is %[1]s, running version IRCdiscord-%[2]s", serverhostname, version))
 	c.sendRPL(irc.RPL_CREATED, fmt.Sprintf("This server was created %s", humanize.Time(startTime)))
-	c.sendRPL(irc.RPL_MYINFO, c.serverPrefix.Host, "IRCdiscord-"+version, "", "", "b")
+	c.sendRPL(irc.RPL_MYINFO, c.serverPrefix.Host, "IRCdiscord-"+version)
 	c.sendRPL(irc.RPL_ISUPPORT, "NICKLEN=32 MAXNICKLEN=36 AWAYLEN=0 KICKLEN=0 CHANTYPES=# are supported by this server") // TODO: change nicklen to be more accurate
 	// TODO: KICKLEN is the max ban reason in discord
 	// CHANNELLEN is the max channel name length
