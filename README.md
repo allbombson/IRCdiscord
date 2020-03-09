@@ -1,6 +1,7 @@
 # IRCdiscord
 
-An IRCd that lets you talk to Discord users
+An IRCd that lets you talk to Discord users.
+
 Essentially an IRC server that connects to Discord to relay messages between an IRC client and Discord.
 
 # Capabilities
