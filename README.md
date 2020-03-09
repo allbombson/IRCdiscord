@@ -10,6 +10,7 @@ Listed below are current features.
 - DM support
 - Talk in any server/channel
 - /list lists all channels in server
+- Join all chats in a server by using /join * or /join "*"
 
 # Installation
 Build with `go build` and then copy into your $PATH. You can also grab a prebuilt binary above.

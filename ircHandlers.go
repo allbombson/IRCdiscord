@@ -208,61 +208,120 @@ func (c *ircConn) handleJOIN(m *irc.Message) {
 		return
 	}
 	c.channelsMutex.Unlock()
+	//Lord Forgive me for what i'm about to do
+	//TODO: Fix this asap its utter shit also note to self learn fucking go to avoid this.
+	if m.Params[0] == "*" {
+        for channelName := range c.guildSession.channelMap.GetSnowflakeMap() {
+            discordChannelID := c.guildSession.channelMap.GetSnowflake(channelName)
+            if discordChannelID == "" {
+                c.sendERR(irc.ERR_NOSUCHCHANNEL, channelName, "No such channel")
+                continue
+            }
 
-	for _, channelName := range strings.Split(m.Params[0], ",") {
-		discordChannelID := c.guildSession.channelMap.GetSnowflake(channelName)
-		if discordChannelID == "" {
-			c.sendERR(irc.ERR_NOSUCHCHANNEL, channelName, "No such channel")
-			continue
-		}
+            discordChannel, err := c.getChannel(discordChannelID)
+            if err != nil {
+                c.sendNOTICE(fmt.Sprint(err))
+                fmt.Println("error fetching channel data")
+                continue
+            }
 
-		discordChannel, err := c.getChannel(discordChannelID)
-		if err != nil {
-			c.sendNOTICE(fmt.Sprint(err))
-			fmt.Println("error fetching channel data")
-			continue
-		}
+            c.channelsMutex.Lock()
+            c.channels[discordChannelID] = true
+            c.channelsMutex.Unlock()
 
-		c.channelsMutex.Lock()
-		c.channels[discordChannelID] = true
-		c.channelsMutex.Unlock()
+            c.sendJOIN("", "", "", channelName)
 
-		c.sendJOIN("", "", "", channelName)
+            go c.handleTOPIC(&irc.Message{
+                Command: irc.TOPIC,
+                Params:  []string{channelName},
+            })
 
-		go c.handleTOPIC(&irc.Message{
-			Command: irc.TOPIC,
-			Params:  []string{channelName},
-		})
+            go func(c *ircConn, channel *discordgo.Channel) {
+                messages, err := c.session.ChannelMessages(channel.ID, 100, "", "", "")
+                if err != nil {
+                    c.sendNOTICE("There was an error getting messages from Discord.")
+                    return
+                }
 
-		go func(c *ircConn, channel *discordgo.Channel) {
-			messages, err := c.session.ChannelMessages(channel.ID, 100, "", "", "")
-			if err != nil {
-				c.sendNOTICE("There was an error getting messages from Discord.")
-				return
-			}
+                channelName := c.guildSession.channelMap.GetName(channel.ID)
+                if channelName == "" {
+                    c.sendNOTICE("This shouldn't happen (1). If you see this, report it as a bug.")
+                    return
+                }
 
-			channelName := c.guildSession.channelMap.GetName(channel.ID)
-			if channelName == "" {
-				c.sendNOTICE("This shouldn't happen (1). If you see this, report it as a bug.")
-				return
-			}
+                tag := uuid.New().String()
+                if c.user.supportedCapabilities["batch"] {
+                    c.sendBATCH(true, tag, "chathistory", channelName)
+                }
+                for i := len(messages); i != 0; i-- { // Discord sends them in reverse order
+                    date, err := messages[i-1].Timestamp.Parse()
+                    if err != nil {
+                        continue
+                    }
+                    sendMessageFromDiscordToIRC(date, c, messages[i-1], "", tag)
+                }
+                if c.user.supportedCapabilities["batch"] {
+                    c.sendBATCH(false, tag)
+                }
+            }(c, discordChannel)
+            go c.handleNAMES(&irc.Message{Command: irc.NAMES, Params: []string{channelName}})
+        }
+	} else {
+        for _, channelName := range strings.Split(m.Params[0], ",") {
+            discordChannelID := c.guildSession.channelMap.GetSnowflake(channelName)
+            if discordChannelID == "" {
+                c.sendERR(irc.ERR_NOSUCHCHANNEL, channelName, "No such channel")
+                continue
+            }
 
-			tag := uuid.New().String()
-			if c.user.supportedCapabilities["batch"] {
-				c.sendBATCH(true, tag, "chathistory", channelName)
-			}
-			for i := len(messages); i != 0; i-- { // Discord sends them in reverse order
-				date, err := messages[i-1].Timestamp.Parse()
-				if err != nil {
-					continue
-				}
-				sendMessageFromDiscordToIRC(date, c, messages[i-1], "", tag)
-			}
-			if c.user.supportedCapabilities["batch"] {
-				c.sendBATCH(false, tag)
-			}
-		}(c, discordChannel)
-		go c.handleNAMES(&irc.Message{Command: irc.NAMES, Params: []string{channelName}})
+            discordChannel, err := c.getChannel(discordChannelID)
+            if err != nil {
+                c.sendNOTICE(fmt.Sprint(err))
+                fmt.Println("error fetching channel data")
+                continue
+            }
+
+            c.channelsMutex.Lock()
+            c.channels[discordChannelID] = true
+            c.channelsMutex.Unlock()
+
+            c.sendJOIN("", "", "", channelName)
+
+            go c.handleTOPIC(&irc.Message{
+                Command: irc.TOPIC,
+                Params:  []string{channelName},
+            })
+
+            go func(c *ircConn, channel *discordgo.Channel) {
+                messages, err := c.session.ChannelMessages(channel.ID, 100, "", "", "")
+                if err != nil {
+                    c.sendNOTICE("There was an error getting messages from Discord.")
+                    return
+                }
+
+                channelName := c.guildSession.channelMap.GetName(channel.ID)
+                if channelName == "" {
+                    c.sendNOTICE("This shouldn't happen (1). If you see this, report it as a bug.")
+                    return
+                }
+
+                tag := uuid.New().String()
+                if c.user.supportedCapabilities["batch"] {
+                    c.sendBATCH(true, tag, "chathistory", channelName)
+                }
+                for i := len(messages); i != 0; i-- { // Discord sends them in reverse order
+                    date, err := messages[i-1].Timestamp.Parse()
+                    if err != nil {
+                        continue
+                    }
+                    sendMessageFromDiscordToIRC(date, c, messages[i-1], "", tag)
+                }
+                if c.user.supportedCapabilities["batch"] {
+                    c.sendBATCH(false, tag)
+                }
+            }(c, discordChannel)
+            go c.handleNAMES(&irc.Message{Command: irc.NAMES, Params: []string{channelName}})
+        }
 	}
 }
 
